@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import {ClubService} from '~services/club-service/club.service';
 import {Club} from '~models/club';
+import {NzTableSortFn} from 'ng-zorro-antd/table';
 
 
 interface ClubExpandableItem {
@@ -26,18 +27,47 @@ export class WelcomeComponent implements OnInit {
     clubAddress: 'Somewhere in a cold place'
   };
 
-  updateEditCache(): void {
-    this.editCache = this.clubs.map(clubItem => ({
-      edit: false,
+  alphabeticClubSorter = (columnName: string): NzTableSortFn => {
+    return (a: any, b: any) => a.club[columnName].localeCompare(b.club[columnName]);
+  }
+
+  numericClubSorter = (columnName: string): NzTableSortFn => {
+    return (a: any, b: any) => b.club[columnName] - a.club[columnName];
+  }
+
+  alphabeticSorter = (columnName: string): NzTableSortFn => {
+    return (a: any, b: any) => a[columnName].localeCompare(b[columnName]);
+  }
+
+  numericSorter = (columnName: string): NzTableSortFn => {
+    return (a: any, b: any) => b[columnName] - a[columnName];
+  }
+
+  resetEditCache(updateEdit = true): void {
+    this.editCache = this.clubs.map((clubItem, clubIndex) => ({
+      edit: updateEdit ? false : this.editCache[clubIndex].edit,
       club: {
         ...clubItem.club,
-        clubMembers: clubItem.club.clubMembers.map(clubMember => ({
-          edit: false,
+        clubMembers: clubItem.club.clubMembers.map((clubMember, clubMemberIndex) => ({
+          edit: updateEdit ? false : this.editCache[clubIndex].club.clubMembers[clubMemberIndex].edit,
           ...clubMember
         }))
       }
     }));
     console.log(this.editCache);
+  }
+
+  private resetClubEditCache(clubIndex: number): void {
+    this.editCache[clubIndex] = {
+      edit: this.editCache[clubIndex].edit,
+      club: {
+        ...this.editCache[clubIndex].club,
+        clubMembers: this.editCache[clubIndex].club.clubMembers.map((clubMember: any, clubMemberIndex: number) => ({
+          edit: this.editCache[clubIndex].club.clubMembers[clubMemberIndex].edit,
+          ...clubMember
+        }))
+      }
+    };
   }
 
   startClubEdit(index: number): void {
@@ -55,7 +85,7 @@ export class WelcomeComponent implements OnInit {
     Object.assign(this.clubs[index].club, this.editCache[index].club);
     this.editCache[index].edit = false;
 
-    this.clubService.post({...this.clubs[index].club, index})
+    this.clubService.post(this.clubs.map(clubItem => clubItem.club))
       .subscribe(data => console.log(data));
   }
 
@@ -77,7 +107,7 @@ export class WelcomeComponent implements OnInit {
     );
     this.editCache[clubIndex].club.clubMembers[clubMemberIndex].edit = false;
 
-    this.clubService.post({...this.clubs[clubIndex].club, index: clubIndex})
+    this.clubService.post(this.clubs.map(clubItem => clubItem.club))
       .subscribe(data => console.log(data));
   }
 
@@ -87,7 +117,46 @@ export class WelcomeComponent implements OnInit {
     this.clubService.list()
       .subscribe(clubs => {
         this.clubs = clubs.map(club => ({club, expand: false}));
-        this.updateEditCache();
+        this.resetEditCache();
       });
+  }
+
+  reSortEditCache(columnName: string, dataType: string, direction: string | null, clubIndex: number = -1): any {
+    if (clubIndex > -1) {
+      if (direction) {
+        console.log('kk dir');
+        if (dataType === 'string') {
+          console.log('kk str');
+          this.editCache[clubIndex].club.clubMembers = this.editCache[clubIndex].club.clubMembers
+            .sort(this.alphabeticSorter(columnName));
+        } else if (dataType === 'number') {
+          console.log('kk num');
+          console.log(this.editCache[clubIndex].club.clubMembers.map((data: any) => data.age));
+          this.editCache[clubIndex].club.clubMembers = this.editCache[clubIndex].club.clubMembers
+            .sort(this.numericSorter(columnName));
+        }
+        if (direction === 'descend') {
+          this.editCache[clubIndex].club.clubMembers.reverse();
+        }
+        console.log(this.editCache[clubIndex].club.clubMembers.map((data: any) => data.age));
+      } else {
+        this.resetClubEditCache(clubIndex);
+      }
+      console.log(this.editCache[clubIndex].club.clubMembers.map((data: any) => data.age));
+    } else  {
+      if (direction) {
+        if (dataType === 'string') {
+          this.editCache = this.editCache.sort(this.alphabeticClubSorter(columnName));
+        } else if (dataType === 'number') {
+          this.editCache = this.editCache.sort(this.numericClubSorter(columnName));
+        }
+        if (direction === 'descend') {
+          this.editCache.reverse();
+        }
+      } else {
+        this.resetEditCache(false);
+      }
+    }
+    console.log(columnName);
   }
 }

@@ -21,8 +21,8 @@ export class ClubService {
       );
   }
 
-  post(club: Club): Observable<Club> {
-    const snakeClub = clubCamelToSnake(club);
-    return this.httpClient.post<Club>(this.clubsUri, snakeClub);
+  post(clubs: Club[]): Observable<Club[]> {
+    const snakeClubs = clubs.map(club => clubCamelToSnake(club)) ;
+    return this.httpClient.post<Club[]>(this.clubsUri, snakeClubs);
   }
 }

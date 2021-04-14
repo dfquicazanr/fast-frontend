@@ -1,21 +1,30 @@
-<nz-table #editRowTable #nestedTable [nzData]="clubs">
+<nz-table #clubTable [nzData]="clubs">
   <thead>
   <tr>
     <th nzWidth="5%"></th>
-    <th nzWidth="40%">Name</th>
-    <th nzWidth="40%">Address</th>
+    <th
+      nzWidth="40%"
+      (nzSortOrderChange)="reSortEditCache('clubName', 'string', $event)"
+      [nzSortFn]="alphabeticClubSorter('clubName')">
+      Name
+    </th>
+    <th
+      nzWidth="40%"
+      (nzSortOrderChange)="reSortEditCache('clubAddress', 'string', $event)"
+      [nzSortFn]="alphabeticClubSorter('clubAddress')">
+      Address
+    </th>
     <th nzWidth="15%">Action</th>
   </tr>
   </thead>
   <tbody>
-  <ng-template ngFor let-clubItem [ngForOf]="clubs" let-clubIndex="index">
+  <ng-template ngFor let-clubItem [ngForOf]="clubTable.data" let-clubIndex="index">
     <tr>
-      <ng-container *ngIf="!editCache[clubIndex].edit; else editClubTemplate">
+      <ng-container *ngIf="!editCache[clubIndex]?.edit; else editClubTemplate">
         <td [(nzExpand)]="clubItem.expand" nzWidth="5%"></td>
         <td nzWidth="40%">{{clubItem.club.clubName}}</td>
         <td nzWidth="40%">{{clubItem.club.clubAddress}}</td>
         <td nzWidth="15%"><a (click)="startClubEdit(clubIndex)">Edit</a></td>
-
       </ng-container>
       <ng-template #editClubTemplate>
         <td [(nzExpand)]="clubItem.expand" nzWidth="5%"></td>
@@ -31,16 +40,23 @@
     <tr [nzExpand]="clubItem.expand">
       <nz-table #innerTable [nzData]="clubItem.club.clubMembers" nzSize="middle" [nzShowPagination]="false">
         <thead>
-          <tr>
-            <th nzWidth="45%">Name</th>
-            <th nzWidth="40%">Age</th>
-            <th nzWidth="15%">Action</th>
-          </tr>
+        <tr>
+          <th
+            (nzSortOrderChange)="reSortEditCache('name', 'string', $event, clubIndex)"
+            [nzSortFn]="alphabeticSorter('name')"
+            nzWidth="45%">
+            Name
+          </th>
+          <th
+            (nzSortOrderChange)="reSortEditCache('age', 'number', $event, clubIndex)"
+            [nzSortFn]="numericSorter('age')"
+            nzWidth="40%">Age</th>
+          <th nzWidth="15%">Action</th>
+        </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let clubMember of clubItem.club.clubMembers; let clubMemberIndex = index">
-          <!--<ng-container>-->
-          <ng-container *ngIf="!editCache[clubIndex].club.clubMembers[clubMemberIndex].edit; else editClubMemberTemplate">
+        <tr *ngFor="let clubMember of innerTable.data; let clubMemberIndex = index">
+          <ng-container *ngIf="!editCache[clubIndex].club.clubMembers[clubMemberIndex]?.edit; else editClubMemberTemplate">
             <td nzWidth="45%">{{clubMember.name}}</td>
             <td nzWidth="40%">{{clubMember.age}}</td>
             <td nzWidth="15%"><a (click)="startClubMemberEdit(clubIndex, clubMemberIndex)">Edit</a></td>
